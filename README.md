@@ -68,7 +68,15 @@ One click options use a POST request,normal links use an HTTP request and `mailt
 
 ## Running It
 
-first install everything
+Optional but recommended, set up a venv first so the dependencies dont pollute your global python:
+```
+python -m venv venv
+source venv/bin/activate
+```
+
+(on windows its `venv\Scripts\activate` instead)
+
+install everything:
 
 ```bash
 pip install -r requirements.txt
