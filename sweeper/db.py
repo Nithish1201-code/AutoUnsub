@@ -36,13 +36,17 @@ RANK = {
 
 
 def get_connection(path=DB_PATH):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(path)
+    if path == ":memory:":
+        conn = sqlite3.connect(":memory:")
+    else:
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(path)
+
     conn.row_factory = sqlite3.Row
     conn.executescript(SCHEMA)
     conn.commit()
     return conn
-
 
 def add_message(conn, message_id, sender_email, seen_at):
     c = conn.cursor()
@@ -120,6 +124,26 @@ def list_senders(conn, status=None):
 
     return c.fetchall()
 
+def get_sender(conn, email):
+    c = conn.cursor()
+    c.execute(
+        "SELECT * FROM senders WHERE email=?",
+        (email,)
+    )
+
+    return c.fetchone()
+
+def list_actionable(conn):
+    c = conn.cursor()
+    c.execute(
+        """
+        SELECT *
+        FROM senders
+        WHERE unsub_method != 'none'
+        ORDER BY message_count DESC
+        """
+    )
+    return c.fetchall()
 
 def set_status(conn, email, status, error=None):
     c = conn.cursor()
