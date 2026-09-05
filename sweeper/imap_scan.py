@@ -1,5 +1,6 @@
 import email
 import imaplib
+import re
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 
@@ -9,6 +10,7 @@ from .unsub_parse import extract_sender, parse_list_unsubscribe
 IMAP_HOST = "imap.gmail.com"
 IMAP_PORT = 993
 HEADERS_WE_WANT = "FROM SUBJECT DATE LIST-UNSUBSCRIBE LIST-UNSUBSCRIBE-POST"
+FETCH_BATCH_SIZE = 25
 
 
 def connect(address, app_password):
@@ -34,6 +36,45 @@ def _get_header_data(data):
                 return item[1]
 
     return None
+
+
+def _fetch_headers(conn, ids):
+    headers = {}
+
+    for start in range(0, len(ids), FETCH_BATCH_SIZE):
+        batch = ids[start:start + FETCH_BATCH_SIZE]
+
+        message_set = ",".join(
+            item.decode() if isinstance(item, bytes) else str(item)
+            for item in batch
+        )
+
+        status, data = conn.fetch(
+            message_set,
+            f"(BODY.PEEK[HEADER.FIELDS ({HEADERS_WE_WANT})])"
+        )
+
+        if status != "OK":
+            continue
+
+        for item in data:
+            if not isinstance(item, tuple) or len(item) < 2:
+                continue
+
+            meta, raw = item
+
+            if not isinstance(meta, bytes) or not isinstance(raw, bytes):
+                continue
+
+            match = re.match(rb"(\d+)\s", meta)
+
+            if not match:
+                continue
+
+            message_id = match.group(1)
+            headers[message_id] = raw
+
+    return headers
 
 
 def _get_seen_at(message):
@@ -73,18 +114,12 @@ def scan_inbox(conn, days=30, mailbox="INBOX", limit=None):
     if limit:
         ids = ids[-limit:]
 
+    fetched = _fetch_headers(conn, ids)
+
     results = []
 
     for message_id in ids:
-        status, data = conn.fetch(
-            message_id,
-            f"(BODY.PEEK[HEADER.FIELDS ({HEADERS_WE_WANT})])"
-        )
-
-        if status != "OK":
-            continue
-
-        raw = _get_header_data(data)
+        raw = fetched.get(message_id)
 
         if not raw:
             continue

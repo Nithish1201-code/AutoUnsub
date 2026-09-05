@@ -8,7 +8,7 @@ class FakeConnection:
     def search(self, charset, query):
         return "OK", [b"1 2"]
 
-    def fetch(self, message_id, query):
+    def fetch(self, message_ids, query):
         messages = {
             b"1": b"From: Alice <alice@example.com>\r\n"
                   b"Date: Mon, 01 Sep 2026 10:00:00 +0000\r\n"
@@ -19,7 +19,19 @@ class FakeConnection:
                   b"List-Unsubscribe: <mailto:unsubscribe@example.com>\r\n\r\n"
         }
 
-        return "OK", [(b"header", messages[message_id])]
+        ids = message_ids.split(",")
+
+        data = []
+
+        for message_id in ids:
+            message_id = message_id.encode()
+
+            data.append((
+                message_id + b" FETCH",
+                messages[message_id]
+            ))
+
+        return "OK", data
 
 
 def test_scan_inbox(monkeypatch):
@@ -39,7 +51,11 @@ def test_scan_inbox(monkeypatch):
             "Unsub",
             (),
             {
-                "method": "https_link" if header.startswith("<https") else "mailto",
+                "method": (
+                    "https_link"
+                    if header.startswith("<https")
+                    else "mailto"
+                ),
                 "https_url": (
                     header.strip("<>")
                     if header.startswith("<https")
