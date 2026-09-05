@@ -51,7 +51,7 @@ def _fetch_headers(conn, ids):
 
         status, data = conn.fetch(
             message_set,
-            f"(BODY.PEEK[HEADER.FIELDS ({HEADERS_WE_WANT})])"
+            f"(X-GM-MSGID BODY.PEEK[HEADER.FIELDS ({HEADERS_WE_WANT})])"
         )
 
         if status != "OK":
@@ -66,17 +66,28 @@ def _fetch_headers(conn, ids):
             if not isinstance(meta, bytes) or not isinstance(raw, bytes):
                 continue
 
-            match = re.match(rb"(\d+)\s", meta)
+            seq_match = re.match(
+                rb"(\d+)",
+                meta
+            )
 
-            if not match:
+            msgid_match = re.search(
+                rb"X-GM-MSGID\s+(\d+)",
+                meta
+            )
+
+            if not seq_match or not msgid_match:
                 continue
 
-            message_id = match.group(1)
-            headers[message_id] = raw
+            sequence_id = seq_match.group(1)
+            gmail_message_id = msgid_match.group(1)
+
+            headers[sequence_id] = (
+                gmail_message_id,
+                raw
+            )
 
     return headers
-
-
 def _get_seen_at(message):
     date = message.get("Date")
 
@@ -119,10 +130,12 @@ def scan_inbox(conn, days=30, mailbox="INBOX", limit=None):
     results = []
 
     for message_id in ids:
-        raw = fetched.get(message_id)
+        item = fetched.get(message_id)
 
-        if not raw:
+        if not item:
             continue
+
+        gmail_message_id, raw = item
 
         message = email.message_from_bytes(raw)
 
@@ -136,6 +149,7 @@ def scan_inbox(conn, days=30, mailbox="INBOX", limit=None):
         )
 
         results.append({
+            "message_id": gmail_message_id.decode(),
             "email": sender_email,
             "name": sender_name,
             "method": unsub.method,

@@ -2,6 +2,7 @@ import sqlite3
 from pathlib import Path
 from datetime import datetime, timezone
 
+
 DB_PATH = Path.home() / ".unsub_sweeper" / "sweeper.db"
 
 SCHEMA = """
@@ -18,6 +19,12 @@ CREATE TABLE IF NOT EXISTS senders (
     last_action_at TEXT,
     last_error TEXT
 );
+
+CREATE TABLE IF NOT EXISTS messages (
+    message_id TEXT PRIMARY KEY,
+    sender_email TEXT,
+    seen_at TEXT
+);
 """
 
 RANK = {
@@ -27,6 +34,7 @@ RANK = {
     "none": 0
 }
 
+
 def get_connection(path=DB_PATH):
     path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(path)
@@ -34,6 +42,24 @@ def get_connection(path=DB_PATH):
     conn.executescript(SCHEMA)
     conn.commit()
     return conn
+
+
+def add_message(conn, message_id, sender_email, seen_at):
+    c = conn.cursor()
+
+    c.execute(
+        """
+        INSERT OR IGNORE INTO messages
+        (message_id, sender_email, seen_at)
+        VALUES (?, ?, ?)
+        """,
+        (message_id, sender_email, seen_at)
+    )
+
+    conn.commit()
+
+    return c.rowcount == 1
+
 
 def upsert_message(conn, email, name, method, https_url, mailto_url, seen_at):
     c = conn.cursor()
@@ -44,7 +70,8 @@ def upsert_message(conn, email, name, method, https_url, mailto_url, seen_at):
         c.execute(
             """
             INSERT INTO senders
-            (email, display_name, message_count, first_seen, last_seen, unsub_method, https_url, mailto_url)
+            (email, display_name, message_count, first_seen, last_seen,
+             unsub_method, https_url, mailto_url)
             VALUES (?, ?, 1, ?, ?, ?, ?, ?)
             """,
             (email, name, seen_at, seen_at, method, https_url, mailto_url)
@@ -53,6 +80,7 @@ def upsert_message(conn, email, name, method, https_url, mailto_url, seen_at):
         return
 
     upgrade = RANK.get(method, 0) > RANK.get(row["unsub_method"], 0)
+
     if upgrade:
         new_method = method
         new_https = https_url
@@ -79,6 +107,7 @@ def upsert_message(conn, email, name, method, https_url, mailto_url, seen_at):
 
 def list_senders(conn, status=None):
     c = conn.cursor()
+
     if status:
         c.execute(
             "SELECT * FROM senders WHERE status=? ORDER BY message_count DESC",
@@ -88,7 +117,10 @@ def list_senders(conn, status=None):
         c.execute(
             "SELECT * FROM senders ORDER BY message_count DESC"
         )
+
     return c.fetchall()
+
+
 def set_status(conn, email, status, error=None):
     c = conn.cursor()
     now = datetime.now(timezone.utc).isoformat()
@@ -102,8 +134,11 @@ def set_status(conn, email, status, error=None):
         (status, now, error, email)
     )
     conn.commit()
+
+
 def get_stats(conn):
     c = conn.cursor()
+
     c.execute(
         """
         SELECT status, COUNT(*) n, SUM(message_count) msgs
@@ -113,9 +148,11 @@ def get_stats(conn):
     )
 
     out = {}
+
     for row in c.fetchall():
         out[row["status"]] = {
             "senders": row["n"],
             "messages": row["msgs"] or 0
         }
+
     return out

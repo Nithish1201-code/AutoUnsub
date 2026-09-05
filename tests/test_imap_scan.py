@@ -10,13 +10,21 @@ class FakeConnection:
 
     def fetch(self, message_ids, query):
         messages = {
-            b"1": b"From: Alice <alice@example.com>\r\n"
-                  b"Date: Mon, 01 Sep 2026 10:00:00 +0000\r\n"
-                  b"List-Unsubscribe: <https://example.com/unsub>\r\n\r\n",
+            b"1": (
+                b"From: Alice <alice@example.com>\r\n"
+                b"Date: Mon, 01 Sep 2026 10:00:00 +0000\r\n"
+                b"List-Unsubscribe: <https://example.com/unsub>\r\n\r\n"
+            ),
+            b"2": (
+                b"From: Bob <bob@example.com>\r\n"
+                b"Date: Tue, 02 Sep 2026 10:00:00 +0000\r\n"
+                b"List-Unsubscribe: <mailto:unsubscribe@example.com>\r\n\r\n"
+            )
+        }
 
-            b"2": b"From: Bob <bob@example.com>\r\n"
-                  b"Date: Tue, 02 Sep 2026 10:00:00 +0000\r\n"
-                  b"List-Unsubscribe: <mailto:unsubscribe@example.com>\r\n\r\n"
+        gmail_ids = {
+            b"1": b"1001",
+            b"2": b"1002"
         }
 
         ids = message_ids.split(",")
@@ -27,7 +35,12 @@ class FakeConnection:
             message_id = message_id.encode()
 
             data.append((
-                message_id + b" FETCH",
+                (
+                    message_id
+                    + b" FETCH (X-GM-MSGID "
+                    + gmail_ids[message_id]
+                    + b")"
+                ),
                 messages[message_id]
             ))
 
