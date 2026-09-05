@@ -135,16 +135,18 @@ def get_sender(conn, email):
 
 def list_actionable(conn):
     c = conn.cursor()
+
     c.execute(
         """
         SELECT *
         FROM senders
         WHERE unsub_method != 'none'
+          AND status != 'success'
         ORDER BY message_count DESC
         """
     )
-    return c.fetchall()
 
+    return c.fetchall()
 def set_status(conn, email, status, error=None):
     c = conn.cursor()
     now = datetime.now(timezone.utc).isoformat()

@@ -3,8 +3,9 @@ from .db import add_message, get_connection, get_stats, upsert_message
 from .imap_scan import connect, scan_inbox
 
 
-def run(days=30, limit=None):
-    credentials = load_credentials()
+def run(days=30, limit=None, credentials=None):
+    if credentials is None:
+        credentials = load_credentials()
 
     conn = connect(
         credentials["address"],

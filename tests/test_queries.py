@@ -3,6 +3,7 @@ from sweeper.db import (
     get_sender,
     list_actionable,
     list_senders,
+    set_status,
     upsert_message
 )
 
@@ -10,6 +11,28 @@ from sweeper.db import (
 def make_db():
     return get_connection(":memory:")
 
+def test_list_actionable_excludes_success():
+    db = make_db()
+
+    upsert_message(
+        db,
+        "alice@example.com",
+        "Alice",
+        "https_link",
+        "https://example.com/unsub",
+        None,
+        "2026-09-01T00:00:00+00:00"
+    )
+
+    set_status(
+        db,
+        "alice@example.com",
+        "success"
+    )
+
+    rows = list_actionable(db)
+
+    assert len(rows) == 0
 
 def test_list_senders():
     db = make_db()
