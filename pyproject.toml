@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "auto-unsub"
-version = "0.1.0"
+version = "1.0.0"
 description = "Scan Gmail for unsubscribe options and bulk unsubscribe from senders."
 readme = "README.md"
 requires-python = ">=3.10"
