@@ -66,19 +66,28 @@ One click options use a POST request,normal links use an HTTP request and `mailt
 | `requirements.txt`       | python dependencies                      |
 | `README.md`              | this file                                |
 
-## Running It
+## Install
 
-first install everything
+### From PyPI
 
-```bash
-pip install -r requirements.txt
-```
-
-then run
+Once released, the normal user install is:
 
 ```bash
-python main.py
+python -m pip install auto-unsub
+auto-unsub
 ```
+
+This installs AutoUnsub as a real command-line application, so users do not need to clone the repository.
+
+### From source
+
+For development:
+
+```bash
+python -m pip install -e .
+auto-unsub
+```
+
 
 on the first run it asks for your gmail address and app password
 

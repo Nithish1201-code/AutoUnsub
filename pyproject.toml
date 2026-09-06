@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "auto-unsub"
+version = "0.1.0"
+description = "Scan Gmail for unsubscribe options and bulk unsubscribe from senders."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+    { name = "Nithish1201" }
+]
+dependencies = [
+    "colorama>=0.4.6",
+    "keyring>=25.0",
+]
+keywords = ["gmail", "unsubscribe", "email", "cli", "productivity"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Communications :: Email",
+    "Topic :: Utilities",
+]
+
+[project.urls]
+Homepage = "https://github.com/Nithish1201-code/AutoUnsub"
+Repository = "https://github.com/Nithish1201-code/AutoUnsub"
+Issues = "https://github.com/Nithish1201-code/AutoUnsub/issues"
+
+[project.scripts]
+auto-unsub = "main:main"
+
+[tool.setuptools]
+py-modules = ["main"]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["sweeper*"]
